@@ -5,6 +5,7 @@ const blog = require('./models/blog')
 const dotenv = require('dotenv').config()
 const methodOverride = require('method-override');
 const app        = express()
+const expressSanitazer = require("express-sanitizer")
 const Blog = require("./models/blog")
 
 
@@ -22,6 +23,7 @@ app.set("view engine", 'ejs')
 app.use (express.static('public'))
 app.use(bodyParser.urlencoded({extended: true}))
 app.use(methodOverride('_method'));
+app.use(expressSanitazer())
 //  RESTFUL ROUTES
 app.get("/", function(req, res){
   res.redirect("/blogs")
@@ -46,6 +48,8 @@ app.get("/blogs/new", function(req,res){
 // CREATE ROUTE
 
 app.post("/blogs", function(req,res){
+  // clean data from mean users who will try to sabotage your data, not JS is allowed this way, only text
+  req.body.blog.body = req.sanitize( req.body.blog.body)
   // create a blog
   Blog.create (req.body.blog, function(err, newBlog){
     if(err){
@@ -90,6 +94,18 @@ app.put("/blogs/:id", function(req, res){
   })
 })
 
+//DELETE ROUTE
+
+app.delete("/blogs/:id", function(req, res){
+  Blog.findByIdAndRemove(req.params.id, function(err, blog){
+    if (err){
+      res.redirect("/blogs")
+    } else {
+      blog.remove()
+      res.redirect("/blogs")
+    }
+  })
+})
 const PORT = process.env.PORT || 3000
 app.listen(PORT, function(){
   console.log("BlogSite is on")
